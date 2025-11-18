@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+Script/.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Excel temporäre Dateien
+~$*.xlsx
+~$*.xls
+
+# Output-Dateien
+Script/test_output/
+*.msg
+*.eml
+
+# Logs
+*.log
+
+# Test-Dateien
+Script/test_*.py
+Script/analyze_*.py
+Script/find_*.py
+Script/list_*.py
+
+# Sensible Daten (Excel-Dateien mit echten Daten)
+Input_Datei/*.xlsx
+Input_Datei/*.xls
+
+# Backup-Dateien
+*.bak
+*.tmp

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python test_modules.py:*)",
+      "Bash(.venvScriptspython.exe test_modules.py)",
+      "Bash(\".venv\\Scripts\\python.exe\" test_modules.py)",
+      "Bash(\".venv\\Scripts\\python.exe\" analyze_excel.py)",
+      "Bash(\".venv\\Scripts\\python.exe\" analyze_columns.py)",
+      "Bash(\".venv\\Scripts\\python.exe\" find_header.py)",
+      "Bash(\".venv\\Scripts\\python.exe\" list_all_columns.py)",
+      "Bash(\".venv\\Scripts\\python.exe\" cutover_mail_generator.py)",
+      "Bash(\".venv\\Scripts\\python.exe\" test_filter_loading.py)",
+      "Bash(\".venv\\Scripts\\python.exe\" test_msg_creation.py)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
