@@ -30,15 +30,14 @@ class CutoverMailGeneratorGUI:
         self.excel_file_path = tk.StringVar()
         self.selected_sheet = tk.StringVar()
         self.cutover_ident = tk.StringVar()
-        self.email_mode = tk.StringVar(value="outlook")
         self.output_path = tk.StringVar()
         self.filter_status = tk.StringVar(value="Alle")
-        self.filter_bereich = tk.StringVar(value="Alle")
+        self.filter_ident = tk.StringVar(value="Alle")
 
         # Sheet-Namen Cache
         self.available_sheets = []
         self.available_status = ["Alle"]
-        self.available_bereiche = ["Alle"]
+        self.available_idents = ["Alle"]
 
         # GUI aufbauen
         self._create_widgets()
@@ -113,28 +112,25 @@ class CutoverMailGeneratorGUI:
         )
         row += 1
 
-        # E-Mail-Modus
-        ttk.Label(main_frame, text="E-Mail-Modus:", font=('Arial', 10, 'bold')).grid(
+        # Ausgabepfad für E-Mail-Dateien
+        ttk.Label(main_frame, text="Ausgabepfad für E-Mail-Dateien:", font=('Arial', 10, 'bold')).grid(
             row=row, column=0, sticky=tk.W, pady=5
         )
         row += 1
 
-        ttk.Radiobutton(
-            main_frame,
-            text="Outlook-Entwürfe erstellen",
-            variable=self.email_mode,
-            value="outlook",
-            command=self.toggle_output_path
-        ).grid(row=row, column=0, columnspan=3, sticky=tk.W, pady=2)
-        row += 1
+        output_frame = ttk.Frame(main_frame)
+        output_frame.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
+        output_frame.columnconfigure(0, weight=1)
 
-        ttk.Radiobutton(
-            main_frame,
-            text="Als E-Mail-Dateien speichern (.eml)",
-            variable=self.email_mode,
-            value="msg",
-            command=self.toggle_output_path
-        ).grid(row=row, column=0, columnspan=3, sticky=tk.W, pady=2)
+        ttk.Entry(output_frame, textvariable=self.output_path, state='readonly').grid(
+            row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 5)
+        )
+
+        ttk.Button(
+            output_frame,
+            text="Durchsuchen...",
+            command=self.browse_output_folder
+        ).grid(row=0, column=1)
         row += 1
 
         # Info-Text
@@ -145,28 +141,6 @@ class CutoverMailGeneratorGUI:
             font=('Arial', 8)
         )
         info_label.grid(row=row, column=0, columnspan=3, sticky=tk.W, pady=(0, 5))
-        row += 1
-
-        # Ausgabepfad (nur für .eml-Modus)
-        ttk.Label(main_frame, text="Ausgabepfad:").grid(
-            row=row, column=0, sticky=tk.W, pady=5
-        )
-        row += 1
-
-        output_frame = ttk.Frame(main_frame)
-        output_frame.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
-        output_frame.columnconfigure(0, weight=1)
-
-        self.output_entry = ttk.Entry(output_frame, textvariable=self.output_path, state='disabled')
-        self.output_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 5))
-
-        self.output_button = ttk.Button(
-            output_frame,
-            text="Durchsuchen...",
-            command=self.browse_output_folder,
-            state='disabled'
-        )
-        self.output_button.grid(row=0, column=1)
         row += 1
 
         # Separator
@@ -195,16 +169,16 @@ class CutoverMailGeneratorGUI:
         )
         self.status_combo.grid(row=0, column=1, sticky=tk.W, padx=(10, 0))
 
-        # Bereich-Filter
-        ttk.Label(filter_frame, text="Bereich filtern:").grid(row=1, column=0, sticky=tk.W, pady=(5, 0))
-        self.bereich_combo = ttk.Combobox(
+        # Ident-Filter
+        ttk.Label(filter_frame, text="Aktivitäts-Ident filtern:").grid(row=1, column=0, sticky=tk.W, pady=(5, 0))
+        self.ident_combo = ttk.Combobox(
             filter_frame,
-            textvariable=self.filter_bereich,
-            values=self.available_bereiche,
+            textvariable=self.filter_ident,
+            values=self.available_idents,
             state='readonly',
             width=30
         )
-        self.bereich_combo.grid(row=1, column=1, sticky=tk.W, padx=(10, 0), pady=(5, 0))
+        self.ident_combo.grid(row=1, column=1, sticky=tk.W, padx=(10, 0), pady=(5, 0))
         row += 1
 
         # Separator
@@ -287,7 +261,7 @@ class CutoverMailGeneratorGUI:
             self.log_message(f"FEHLER: {e}")
 
     def load_filter_options(self):
-        """Lädt verfügbare Bereiche und Status für Filter."""
+        """Lädt verfügbare Idents und Status für Filter."""
         file_path = self.excel_file_path.get()
         sheet_name = self.selected_sheet.get()
 
@@ -295,14 +269,14 @@ class CutoverMailGeneratorGUI:
             return
 
         try:
-            # Bereiche laden
-            bereiche = excel_parser.get_unique_values(
+            # Idents laden
+            idents = excel_parser.get_unique_values(
                 file_path,
                 sheet_name,
-                config.EXCEL_COLUMNS['bereich']
+                config.EXCEL_COLUMNS['ident']
             )
-            self.available_bereiche = ["Alle"] + bereiche
-            self.bereich_combo['values'] = self.available_bereiche
+            self.available_idents = ["Alle"] + idents
+            self.ident_combo['values'] = self.available_idents
 
             # Status-Werte laden
             status_values = excel_parser.get_unique_values(
@@ -322,17 +296,6 @@ class CutoverMailGeneratorGUI:
         if folder:
             self.output_path.set(folder)
             self.log_message(f"Ausgabeordner: {folder}")
-
-    def toggle_output_path(self):
-        """Aktiviert/deaktiviert Ausgabepfad je nach Modus."""
-        mode = self.email_mode.get()
-
-        if mode == "msg":
-            self.output_entry.config(state='normal')
-            self.output_button.config(state='normal')
-        else:
-            self.output_entry.config(state='disabled')
-            self.output_button.config(state='disabled')
 
     def validate_inputs(self) -> bool:
         """
@@ -356,8 +319,8 @@ class CutoverMailGeneratorGUI:
             messagebox.showwarning("Validierung", "Bitte geben Sie eine Cutover-Ident ein.")
             return False
 
-        # Ausgabepfad (nur bei .eml-Modus)
-        if self.email_mode.get() == "msg" and not self.output_path.get():
+        # Ausgabepfad
+        if not self.output_path.get():
             messagebox.showwarning(
                 "Validierung",
                 "Bitte wählen Sie einen Ausgabeordner für die E-Mail-Dateien."
@@ -387,8 +350,7 @@ class CutoverMailGeneratorGUI:
             file_path = self.excel_file_path.get()
             sheet_name = self.selected_sheet.get()
             cutover_id = self.cutover_ident.get().strip()
-            mode = self.email_mode.get()
-            output_path = self.output_path.get() if mode == "msg" else None
+            output_path = self.output_path.get()
 
             # Filter vorbereiten
             filters = {}
@@ -398,10 +360,10 @@ class CutoverMailGeneratorGUI:
             if status_filter != "Alle":
                 filters[config.EXCEL_COLUMNS['ist_status']] = status_filter
 
-            # Bereich-Filter anwenden (nur wenn nicht "Alle")
-            bereich_filter = self.filter_bereich.get()
-            if bereich_filter != "Alle":
-                filters[config.EXCEL_COLUMNS['bereich']] = bereich_filter
+            # Ident-Filter anwenden (nur wenn nicht "Alle")
+            ident_filter = self.filter_ident.get()
+            if ident_filter != "Alle":
+                filters[config.EXCEL_COLUMNS['ident']] = ident_filter
 
             # Aktivitäten laden
             self.log_message(f"\nLade Aktivitäten aus: {Path(file_path).name}")
@@ -419,25 +381,14 @@ class CutoverMailGeneratorGUI:
                 )
                 return
 
-            # Outlook-Verfügbarkeit prüfen (nur für outlook-Modus)
-            if mode == 'outlook':
-                if not email_generator.test_outlook_connection():
-                    messagebox.showerror(
-                        "Outlook nicht verfügbar",
-                        "Microsoft Outlook konnte nicht gestartet werden.\n"
-                        "Bitte stellen Sie sicher, dass Outlook installiert ist."
-                    )
-                    self.log_message("FEHLER: Outlook nicht verfügbar")
-                    return
-
             # E-Mails generieren
-            self.log_message(f"\nStarte E-Mail-Generierung im Modus: {mode}")
+            self.log_message(f"\nStarte E-Mail-Generierung (EML-Dateien)")
             self.log_message("-" * 50)
 
             stats = email_generator.generate_emails(
                 activities,
                 cutover_id,
-                mode,
+                'msg',
                 output_path,
                 self.update_progress
             )

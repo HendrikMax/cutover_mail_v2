@@ -61,6 +61,47 @@ def create_email_body(activity: Dict[str, str], cutover_ident: str) -> str:
     return body
 
 
+def create_email_body_html(activity: Dict[str, str], cutover_ident: str) -> str:
+    """
+    Erstellt E-Mail-Inhalt als HTML (für EML-Dateien).
+
+    Args:
+        activity: Dictionary mit Aktivitätsdaten
+        cutover_ident: Cutover-Identifikation
+
+    Returns:
+        Formatierter E-Mail-HTML-Text
+    """
+    # HTML mit formatierten Feldern (fett für wichtige Infos)
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: Calibri, Arial, sans-serif; font-size: 11pt;">
+    <p>Hallo,</p>
+
+    <p>bitte führe die folgende Cutover-Aktivität: <br><br>
+    <strong>{activity['ident']} - {activity['aktivitaet']}</strong><br><br>
+    am: <strong>{activity['plan_start']}</strong><br>
+    im System: <strong>{activity['system']}</strong><br><br>
+    aus.</p>
+
+    <p>Bitte trage nach Ausführung der Cutover-Aktivität den Status: <br><br>
+    <strong>abgeschlossen</strong> <br><br>
+    im Cutoverplan <strong>{cutover_ident}</strong> in der o.a. Cutover-Aktivität ein.</p>
+
+    <p>Für Rückfragen stehe ich Dir sehr gern zur Verfügung.</p>
+
+    <p>Vielen Dank im Voraus.</p>
+
+    <p>{config.SIGNATURE.replace(chr(10), '<br>')}</p>
+</body>
+</html>"""
+
+    return html
+
+
 def create_outlook_draft(activity: Dict[str, str], cutover_ident: str) -> None:
     """
     Erstellt E-Mail-Entwurf in Outlook.
@@ -128,16 +169,20 @@ def save_as_eml(
         file_path = output_dir / filename
 
         # E-Mail erstellen mit Python email-Bibliothek
-        msg = MIMEMultipart()
+        msg = MIMEMultipart('alternative')
         msg['From'] = config.BCC_EMAIL
         msg['To'] = activity['email']
         msg['Bcc'] = config.BCC_EMAIL
         msg['Subject'] = create_email_subject(activity, cutover_ident)
         msg['Date'] = formatdate(localtime=True)
 
-        # E-Mail-Body
-        body = create_email_body(activity, cutover_ident)
-        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+        # E-Mail-Body - beide Versionen (Plain Text und HTML)
+        text_body = create_email_body(activity, cutover_ident)
+        html_body = create_email_body_html(activity, cutover_ident)
+
+        # Beide Versionen anhängen (Plain Text zuerst, dann HTML)
+        msg.attach(MIMEText(text_body, 'plain', 'utf-8'))
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
 
         # Als EML-Datei speichern
         with open(file_path, 'w', encoding='utf-8') as f:

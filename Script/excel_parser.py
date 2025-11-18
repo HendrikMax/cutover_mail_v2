@@ -158,8 +158,8 @@ def load_activities(
                         # Filtern nach leeren Feldern
                         df = df[df[col_name].isna() | (df[col_name] == '')]
                     else:
-                        # Filtern nach bestimmtem Wert
-                        df = df[df[col_name] == filter_value]
+                        # Filtern nach bestimmtem Wert (String-Vergleich für Robustheit)
+                        df = df[df[col_name].astype(str) == str(filter_value)]
 
         # In Liste von Dictionaries konvertieren
         activities = []
