@@ -16,17 +16,31 @@ hendrik.max4@dhl.com"""
 # E-Mail-Template
 EMAIL_TEMPLATE = """Hallo,
 
-bitte führe die folgende Cutover-Aktivität
+bitte führe die folgende Cutover-Aktivität aus dem Cutover-Plan {sheet_name}:
+
 {ident} - {aktivitaet}
-am: {plan_start}
+
+von: {plan_start}
+bis: {plan_ende}
 im System: {system}
 aus.
 
-Bitte trage nach Ausführung der Cutover-Aktivität den Status im Cutoverplan {cutover_ident} in der o.a. Cutover-Aktivität ein.
+Bitte trage nach Ausführung der Cutover-Aktivität den Status:
+
+abgeschlossen
+
+im Cutoverplan:
+
+{cutover_plan_link}
+
+
+in der o.a. Cutover-Aktivität ein und
+
+sende mir die E-Mail mit "abgeschlossen" am Ende des Betreffs zurück.
 
 Für Rückfragen stehe ich Dir sehr gern zur Verfügung.
 
-Vielen Dank im Voraus.
+Vielen Dank im Voraus und viel Erfolg!
 
 {signature}"""
 

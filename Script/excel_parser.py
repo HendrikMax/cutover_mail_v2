@@ -28,7 +28,7 @@ def get_sheet_names(file_path: str) -> List[str]:
         raise FileNotFoundError(f"Excel-Datei nicht gefunden: {file_path}")
 
     try:
-        excel_file = pd.ExcelFile(file_path)
+        excel_file = pd.ExcelFile(file_path, engine='openpyxl')
         return excel_file.sheet_names
     except Exception as e:
         raise ValueError(f"Fehler beim Lesen der Excel-Datei: {e}")
@@ -142,7 +142,15 @@ def load_activities(
 
     try:
         # Excel-Datei einlesen (header=2 weil Spaltennamen in Zeile 3 sind)
-        df = pd.read_excel(file_path, sheet_name=sheet_name, header=2)
+        # Ident-Spalte explizit als String lesen, um "1.10" -> 1.1 zu verhindern
+        ident_col = config.EXCEL_COLUMNS['ident']
+        df = pd.read_excel(
+            file_path, 
+            sheet_name=sheet_name, 
+            header=2, 
+            engine='openpyxl',
+            dtype={ident_col: str}
+        )
 
         # Spalten validieren
         validate_columns(df)
@@ -176,6 +184,7 @@ def load_activities(
                 'aktivitaet': clean_value(row[config.EXCEL_COLUMNS['aktivitaet']]),
                 'email': email,
                 'plan_start': format_date(row[config.EXCEL_COLUMNS['plan_start']]),
+                'plan_ende': format_date(row.get(config.EXCEL_COLUMNS['plan_ende'])),
                 'system': clean_value(row[config.EXCEL_COLUMNS['system']]),
                 'ist_status': clean_value(row.get(config.EXCEL_COLUMNS['ist_status'], '')),
             }
@@ -205,7 +214,18 @@ def get_unique_values(file_path: str, sheet_name: str, column_name: str) -> List
         Liste der eindeutigen Werte (sortiert)
     """
     try:
-        df = pd.read_excel(file_path, sheet_name=sheet_name, header=2)
+        # Ident-Spalte explizit als String lesen, um "1.10" -> 1.1 zu verhindern
+        dtype_spec = {}
+        if column_name == config.EXCEL_COLUMNS['ident']:
+            dtype_spec = {column_name: str}
+        
+        df = pd.read_excel(
+            file_path, 
+            sheet_name=sheet_name, 
+            header=2, 
+            engine='openpyxl',
+            dtype=dtype_spec
+        )
         if column_name in df.columns:
             unique_values = df[column_name].dropna().unique()
             return sorted([str(val) for val in unique_values])

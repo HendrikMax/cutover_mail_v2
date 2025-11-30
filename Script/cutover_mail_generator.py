@@ -30,6 +30,7 @@ class CutoverMailGeneratorGUI:
         self.excel_file_path = tk.StringVar()
         self.selected_sheet = tk.StringVar()
         self.cutover_ident = tk.StringVar()
+        self.cutover_plan_link = tk.StringVar()
         self.output_path = tk.StringVar()
         self.filter_status = tk.StringVar(value="Alle")
         self.filter_ident = tk.StringVar(value="Alle")
@@ -103,6 +104,21 @@ class CutoverMailGeneratorGUI:
         )
         ttk.Label(ident_frame, text='  (z.B. "JOSEF", "DPN_ECH")', foreground='gray').grid(
             row=0, column=1, sticky=tk.W
+        )
+        row += 1
+
+        # Link Cutover-Plan
+        ttk.Label(main_frame, text="Link Cutover-Plan:").grid(
+            row=row, column=0, sticky=tk.W, pady=5
+        )
+        row += 1
+
+        link_frame = ttk.Frame(main_frame)
+        link_frame.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
+        link_frame.columnconfigure(0, weight=1)
+
+        ttk.Entry(link_frame, textvariable=self.cutover_plan_link).grid(
+            row=0, column=0, sticky=(tk.W, tk.E)
         )
         row += 1
 
@@ -350,6 +366,7 @@ class CutoverMailGeneratorGUI:
             file_path = self.excel_file_path.get()
             sheet_name = self.selected_sheet.get()
             cutover_id = self.cutover_ident.get().strip()
+            cutover_link = self.cutover_plan_link.get().strip()
             output_path = self.output_path.get()
 
             # Filter vorbereiten
@@ -390,7 +407,9 @@ class CutoverMailGeneratorGUI:
                 cutover_id,
                 'msg',
                 output_path,
-                self.update_progress
+                self.update_progress,
+                sheet_name,
+                cutover_link
             )
 
             # Ergebnis anzeigen

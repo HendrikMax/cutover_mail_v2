@@ -38,13 +38,15 @@ def create_email_subject(activity: Dict[str, str], cutover_ident: str) -> str:
     return subject
 
 
-def create_email_body(activity: Dict[str, str], cutover_ident: str) -> str:
+def create_email_body(activity: Dict[str, str], cutover_ident: str, sheet_name: str = "", cutover_plan_link: str = "") -> str:
     """
     Erstellt E-Mail-Inhalt aus Template.
 
     Args:
         activity: Dictionary mit Aktivitätsdaten
         cutover_ident: Cutover-Identifikation
+        sheet_name: Name des Tabellenblatts
+        cutover_plan_link: Link zum Cutover-Plan
 
     Returns:
         Formatierter E-Mail-Text
@@ -53,21 +55,26 @@ def create_email_body(activity: Dict[str, str], cutover_ident: str) -> str:
         ident=activity['ident'],
         aktivitaet=activity['aktivitaet'],
         plan_start=activity['plan_start'],
+        plan_ende=activity['plan_ende'],
         system=activity['system'],
         cutover_ident=cutover_ident,
+        sheet_name=sheet_name,
+        cutover_plan_link=cutover_plan_link,
         signature=config.SIGNATURE
     )
 
     return body
 
 
-def create_email_body_html(activity: Dict[str, str], cutover_ident: str) -> str:
+def create_email_body_html(activity: Dict[str, str], cutover_ident: str, sheet_name: str = "", cutover_plan_link: str = "") -> str:
     """
     Erstellt E-Mail-Inhalt als HTML (für EML-Dateien).
 
     Args:
         activity: Dictionary mit Aktivitätsdaten
         cutover_ident: Cutover-Identifikation
+        sheet_name: Name des Tabellenblatts
+        cutover_plan_link: Link zum Cutover-Plan
 
     Returns:
         Formatierter E-Mail-HTML-Text
@@ -81,19 +88,30 @@ def create_email_body_html(activity: Dict[str, str], cutover_ident: str) -> str:
 <body style="font-family: Calibri, Arial, sans-serif; font-size: 11pt;">
     <p>Hallo,</p>
 
-    <p>bitte führe die folgende Cutover-Aktivität: <br><br>
-    <strong>{activity['ident']} - {activity['aktivitaet']}</strong><br><br>
-    am: <strong>{activity['plan_start']}</strong><br>
+    <p>bitte führe die folgende Cutover-Aktivität aus dem Cutover-Plan <strong>{sheet_name}</strong>:</p>
+
+    <p><strong>{activity['ident']} - {activity['aktivitaet']}</strong></p>
+
+    <p>von: <strong>{activity['plan_start']}</strong><br>
+    bis: <strong>{activity['plan_ende']}</strong><br>
     im System: <strong>{activity['system']}</strong><br><br>
     aus.</p>
 
-    <p>Bitte trage nach Ausführung der Cutover-Aktivität den Status: <br><br>
-    <strong>abgeschlossen</strong> <br><br>
-    im Cutoverplan <strong>{cutover_ident}</strong> in der o.a. Cutover-Aktivität ein.</p>
+    <p>Bitte trage nach Ausführung der Cutover-Aktivität den Status:</p>
+
+    <p><strong>abgeschlossen</strong></p>
+
+    <p>im Cutoverplan:</p>
+
+    <p><a href="{cutover_plan_link}">{cutover_plan_link}</a></p>
+
+    <p>in der o.a. Cutover-Aktivität ein und</p>
+
+    <p>sende mir die E-Mail mit "abgeschlossen" am Ende des Betreffs zurück.</p>
 
     <p>Für Rückfragen stehe ich Dir sehr gern zur Verfügung.</p>
 
-    <p>Vielen Dank im Voraus.</p>
+    <p>Vielen Dank im Voraus und viel Erfolg!</p>
 
     <p>{config.SIGNATURE.replace(chr(10), '<br>')}</p>
 </body>
@@ -102,13 +120,15 @@ def create_email_body_html(activity: Dict[str, str], cutover_ident: str) -> str:
     return html
 
 
-def create_outlook_draft(activity: Dict[str, str], cutover_ident: str) -> None:
+def create_outlook_draft(activity: Dict[str, str], cutover_ident: str, sheet_name: str = "", cutover_plan_link: str = "") -> None:
     """
     Erstellt E-Mail-Entwurf in Outlook.
 
     Args:
         activity: Dictionary mit Aktivitätsdaten
         cutover_ident: Cutover-Identifikation
+        sheet_name: Name des Tabellenblatts
+        cutover_plan_link: Link zum Cutover-Plan
 
     Raises:
         Exception: Outlook nicht verfügbar oder Fehler bei Erstellung
@@ -122,7 +142,7 @@ def create_outlook_draft(activity: Dict[str, str], cutover_ident: str) -> None:
         mail.To = activity['email']
         mail.BCC = config.BCC_EMAIL
         mail.Subject = create_email_subject(activity, cutover_ident)
-        mail.Body = create_email_body(activity, cutover_ident)
+        mail.Body = create_email_body(activity, cutover_ident, sheet_name, cutover_plan_link)
 
         # Als Entwurf anzeigen (nicht senden!)
         mail.Display(False)
@@ -134,7 +154,9 @@ def create_outlook_draft(activity: Dict[str, str], cutover_ident: str) -> None:
 def save_as_eml(
     activity: Dict[str, str],
     cutover_ident: str,
-    output_path: str
+    output_path: str,
+    sheet_name: str = "",
+    cutover_plan_link: str = ""
 ) -> str:
     """
     Speichert E-Mail als EML-Datei (Standard E-Mail-Format).
@@ -146,6 +168,8 @@ def save_as_eml(
         activity: Dictionary mit Aktivitätsdaten
         cutover_ident: Cutover-Identifikation
         output_path: Pfad zum Ausgabeordner
+        sheet_name: Name des Tabellenblatts
+        cutover_plan_link: Link zum Cutover-Plan
 
     Returns:
         Pfad zur erstellten EML-Datei
@@ -177,8 +201,8 @@ def save_as_eml(
         msg['Date'] = formatdate(localtime=True)
 
         # E-Mail-Body - beide Versionen (Plain Text und HTML)
-        text_body = create_email_body(activity, cutover_ident)
-        html_body = create_email_body_html(activity, cutover_ident)
+        text_body = create_email_body(activity, cutover_ident, sheet_name, cutover_plan_link)
+        html_body = create_email_body_html(activity, cutover_ident, sheet_name, cutover_plan_link)
 
         # Beide Versionen anhängen (Plain Text zuerst, dann HTML)
         msg.attach(MIMEText(text_body, 'plain', 'utf-8'))
@@ -199,7 +223,9 @@ def generate_emails(
     cutover_ident: str,
     mode: str,
     output_path: Optional[str] = None,
-    progress_callback: Optional[Callable[[int, int, str], None]] = None
+    progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    sheet_name: str = "",
+    cutover_plan_link: str = ""
 ) -> Dict[str, int]:
     """
     Generiert E-Mails für alle Aktivitäten.
@@ -211,6 +237,8 @@ def generate_emails(
         output_path: Optional - Pfad für .msg-Dateien (erforderlich bei mode='msg')
         progress_callback: Optional - Callback-Funktion mit Signatur:
                           callback(current: int, total: int, message: str)
+        sheet_name: Name des Tabellenblatts
+        cutover_plan_link: Link zum Cutover-Plan
 
     Returns:
         Dictionary mit Statistiken:
@@ -237,14 +265,14 @@ def generate_emails(
     for i, activity in enumerate(activities, 1):
         try:
             if mode == 'outlook':
-                create_outlook_draft(activity, cutover_ident)
+                create_outlook_draft(activity, cutover_ident, sheet_name, cutover_plan_link)
                 message = f"E-Mail erstellt: {activity['ident']} - {activity['email']}"
             else:  # mode == 'msg' (verwendet jetzt EML-Format)
                 # Speichere als EML-Datei (stabiler als MSG)
                 if progress_callback:
                     progress_callback(i, total, f"Speichere EML-Datei: {activity['ident']}...")
 
-                file_path = save_as_eml(activity, cutover_ident, output_path)
+                file_path = save_as_eml(activity, cutover_ident, output_path, sheet_name, cutover_plan_link)
                 message = f"EML-Datei gespeichert: {activity['ident']} -> {Path(file_path).name}"
 
             erfolg += 1

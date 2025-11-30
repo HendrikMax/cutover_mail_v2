@@ -1,8 +1,8 @@
 # Umsetzungskonzept: Cutover E-Mail Generator
 
 **Projekt:** Automatische Erstellung von Cutover-E-Mails aus Excel-Cutoverplan
-**Datum:** 2025-11-18
-**Version:** 1.0
+**Datum:** 2025-11-30
+**Version:** 1.2
 
 ---
 
@@ -15,12 +15,14 @@ Dieses Dokument beschreibt die technische Umsetzung eines Python-Scripts, das au
 ## 2. Projektstruktur
 
 ```
-cutover_mail/
+cutover_mail_v2/
 ├── Konzept/
 │   ├── Konzept Cutover_E-Mails.md
-│   └── Umsetzungskonzept Cutover_E-Mails.md (diese Datei)
+│   ├── Umsetzungskonzept Cutover_E-Mails.md (diese Datei)
+│   └── Anleitung_Programmstart.md
 ├── Input_Datei/
 │   └── DHL_JOSEF CuOvPlan DPN_ECH V01 20250813 DRAFT.xlsx
+├── Mails/                            # Generierte EML-Dateien
 └── Script/
     ├── cutover_mail_generator.py    # Hauptprogramm mit GUI
     ├── excel_parser.py               # Excel-Verarbeitung
@@ -81,17 +83,31 @@ Bemerkungen | Link auf CuOv-Plan
 ```
 Hallo,
 
-bitte führe die folgende Cutover-Aktivität
+bitte führe die folgende Cutover-Aktivität aus dem Cutover-Plan {Tabellenblatt}:
+
 {Ident} - {Aktivität}
-am: {PLAN-Start}
+
+von: {PLAN-Start}
+bis: {PLAN-Ende}
 im System: {System/Mandant-Buchungskreis}
 aus.
 
-Bitte trage nach Ausführung der Cutover-Aktivität den Status im Cutoverplan {Cutover-Ident} in der o.a. Cutover-Aktivität ein.
+Bitte trage nach Ausführung der Cutover-Aktivität den Status:
+
+abgeschlossen
+
+im Cutoverplan:
+
+{Link Cutover-Plan}
+
+
+in der o.a. Cutover-Aktivität ein und
+
+sende mir die E-Mail mit "abgeschlossen" am Ende des Betreffs zurück.
 
 Für Rückfragen stehe ich Dir sehr gern zur Verfügung.
 
-Vielen Dank im Voraus.
+Vielen Dank im Voraus und viel Erfolg!
 
 Beste Grüße
 Hendrik
@@ -142,9 +158,9 @@ hendrik.max4@dhl.com
 | **Excel-Dateiauswahl** | Button + Label | Öffnet Datei-Dialog zur Auswahl der .xlsx-Datei |
 | **Tabellenblatt** | Dropdown | Zeigt alle verfügbaren Tabellenblätter |
 | **Cutover-Ident** | Eingabefeld | Freitext (z.B. "JOSEF", "DPN_ECH") |
-| **E-Mail-Modus** | Radio-Buttons | "Outlook-Entwürfe erstellen" / "Als .msg-Dateien speichern" |
-| **Filter-Optionen** | Checkboxen/Dropdown | Optional: Nach IST-Status oder Bereich filtern |
-| **Ausgabepfad** | Button + Label | (nur bei .msg-Modus) Ordner für gespeicherte E-Mails |
+| **Link Cutover-Plan** | Eingabefeld | SharePoint-Link zum Cutover-Plan (wird in E-Mail eingefügt) |
+| **Ausgabepfad** | Button + Label | Ordner für gespeicherte EML-Dateien |
+| **Filter-Optionen** | Checkboxen/Dropdown | Optional: Nach IST-Status oder Aktivitäts-Ident filtern |
 
 ### 6.2 Aktions-Elemente
 
@@ -169,10 +185,10 @@ hendrik.max4@dhl.com
 │                                                         │
 │  E-Mail-Modus:                                         │
 │    ○ Outlook-Entwürfe erstellen                        │
-│    ○ Als .msg-Dateien speichern                        │
+│    ○ Als .eml-Dateien speichern                        │
 │                                                         │
 │  Ausgabepfad:  [____________________________] [Durchsuchen] │
-│    (nur aktiv bei .msg-Modus)                          │
+│    (nur aktiv bei .eml-Modus)                          │
 │                                                         │
 │  Filter-Optionen:                                      │
 │    □ Nur Aktivitäten mit leerem IST-Status             │
@@ -214,17 +230,30 @@ hendrik.max4@dhl.com"""
 # E-Mail-Template
 EMAIL_TEMPLATE = """Hallo,
 
-bitte führe die folgende Cutover-Aktivität
+bitte führe die folgende Cutover-Aktivität aus dem Cutover-Plan {sheet_name}:
+
 {ident} - {aktivitaet}
+
 am: {plan_start}
 im System: {system}
 aus.
 
-Bitte trage nach Ausführung der Cutover-Aktivität den Status im Cutoverplan {cutover_ident} in der o.a. Cutover-Aktivität ein.
+Bitte trage nach Ausführung der Cutover-Aktivität den Status:
+
+abgeschlossen
+
+im Cutoverplan:
+
+{cutover_plan_link}
+
+
+in der o.a. Cutover-Aktivität ein und
+
+sende mir die E-Mail mit \"abgeschlossen\" am Ende des Betreffs zurück.
 
 Für Rückfragen stehe ich Dir sehr gern zur Verfügung.
 
-Vielen Dank im Voraus.
+Vielen Dank im Voraus und viel Erfolg!
 
 {signature}"""
 
@@ -308,10 +337,11 @@ def validate_email(email: str) -> bool:
 ```
 
 **Implementierungsdetails:**
-- Verwendet `openpyxl` oder `pandas` für Excel-Verarbeitung
-- Startet Daten-Lesen ab Zeile 2 (Zeile 1 = Header)
-- Filtert leere Zeilen heraus
-- Konvertiert Datum-Felder in lesbares Format
+- Verwendet `pandas` mit `openpyxl` Engine für Excel-Verarbeitung
+- Startet Daten-Lesen ab Zeile 3 (header=2, da Spaltennamen in Zeile 3 sind)
+- **Ident-Trunkierung Fix**: Liest Ident-Spalte explizit als String (`dtype={ident_col: str}`), um zu verhindern, dass "1.10" zu "1.1" wird
+- Filtert leere Zeilen heraus (wo Ident leer ist)
+- Konvertiert Datum-Felder in lesbares Format (DD.MM.YYYY HH:MM)
 - Validiert E-Mail-Adressen mit regex
 
 ---
@@ -323,13 +353,15 @@ def validate_email(email: str) -> bool:
 **Hauptfunktionen:**
 
 ```python
-def create_email_body(activity: dict, cutover_ident: str) -> str:
+def create_email_body(activity: dict, cutover_ident: str, sheet_name: str = "", cutover_plan_link: str = "") -> str:
     """
     Erstellt E-Mail-Inhalt aus Template.
 
     Args:
         activity: Dictionary mit Aktivitätsdaten
         cutover_ident: Cutover-Identifikation
+        sheet_name: Name des Tabellenblatts
+        cutover_plan_link: Link zum Cutover-Plan
 
     Returns:
         Formatierter E-Mail-Text
@@ -347,42 +379,52 @@ def create_email_subject(activity: dict, cutover_ident: str) -> str:
         Formatierter Betreff (gekürzt bei Bedarf)
     """
 
-def create_outlook_draft(activity: dict, cutover_ident: str):
+def create_outlook_draft(activity: dict, cutover_ident: str, sheet_name: str = "", cutover_plan_link: str = ""):
     """
     Erstellt E-Mail-Entwurf in Outlook.
 
     Args:
         activity: Dictionary mit Aktivitätsdaten
         cutover_ident: Cutover-Identifikation
+        sheet_name: Name des Tabellenblatts
+        cutover_plan_link: Link zum Cutover-Plan
 
     Raises:
         Exception: Outlook nicht verfügbar
     """
 
-def save_as_msg(activity: dict, cutover_ident: str, output_path: str):
+def save_as_eml(activity: dict, cutover_ident: str, output_path: str, sheet_name: str = "", cutover_plan_link: str = ""):
     """
-    Speichert E-Mail als .msg-Datei.
+    Speichert E-Mail als EML-Datei (Standard E-Mail-Format).
+    
+    EML-Dateien können in Outlook und allen anderen E-Mail-Clients
+    geöffnet werden. Diese Methode ist stabil und benötigt kein COM.
 
     Args:
         activity: Dictionary mit Aktivitätsdaten
         cutover_ident: Cutover-Identifikation
         output_path: Pfad zum Ausgabeordner
+        sheet_name: Name des Tabellenblatts
+        cutover_plan_link: Link zum Cutover-Plan
 
     Raises:
         IOError: Speichern fehlgeschlagen
     """
 
 def generate_emails(activities: list, cutover_ident: str, mode: str,
-                   output_path: str = None, progress_callback=None):
+                   output_path: str = None, progress_callback=None, 
+                   sheet_name: str = "", cutover_plan_link: str = ""):
     """
     Generiert E-Mails für alle Aktivitäten.
 
     Args:
         activities: Liste von Aktivitäten
         cutover_ident: Cutover-Identifikation
-        mode: 'outlook' oder 'msg'
-        output_path: Optional - Pfad für .msg-Dateien
+        mode: 'outlook' oder 'eml'
+        output_path: Optional - Pfad für .eml-Dateien
         progress_callback: Optional - Callback für Fortschritt
+        sheet_name: Name des Tabellenblatts
+        cutover_plan_link: Link zum Cutover-Plan
 
     Returns:
         Dictionary mit Statistiken (erfolg, fehler)
@@ -390,10 +432,12 @@ def generate_emails(activities: list, cutover_ident: str, mode: str,
 ```
 
 **Implementierungsdetails:**
-- Verwendet `win32com.client` für Outlook-Integration
-- Dateiname für .msg: `{Cutover-Ident}_{Ident}_{Timestamp}.msg`
+- Verwendet `win32com.client` für Outlook-Integration (nur für Outlook-Modus)
+- Verwendet Python `email` Bibliothek für EML-Dateien (stabiler, kein COM benötigt)
+- Dateiname für .eml: `{Cutover-Ident}_{Ident}_{Timestamp}.eml`
 - Fehlerbehandlung für ungültige E-Mail-Adressen
 - Fortschritts-Callback für GUI-Update
+- HTML-Formatierung für EML-Dateien mit anklickbaren Links
 
 ---
 
@@ -581,7 +625,7 @@ except Exception as e:
 
 ```bash
 # 1. Repository klonen / Dateien kopieren
-cd C:\Users\hendrik.max\Documents\DEV_LOCL\cutover_mail\Script
+cd C:\Users\hendrik.max\Documents\DEV_LOCL\cutover_mail_v2\Script
 
 # 2. Virtual Environment erstellen
 python -m venv venv
@@ -606,10 +650,10 @@ python cutover_mail_generator.py
 ### 13.1 requirements.txt (Vorschau)
 
 ```txt
-openpyxl==3.1.2
-pywin32==306
-pandas==2.2.0
-python-dateutil==2.8.2
+openpyxl>=3.1.2
+pywin32>=307
+pandas>=2.2.0
+python-dateutil>=2.8.2
 ```
 
 ### 13.2 Beispiel-Ausgabe (Log)

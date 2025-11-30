@@ -8,7 +8,7 @@
 
 1. Navigiere zum Hauptordner:
    ```
-   C:\Users\hendrik.max\Documents\DEV_LOCL\cutover_mail\
+   C:\Users\hendrik.max\Documents\DEV_LOCL\cutover_mail_v2\
    ```
 2. Doppelklick auf die Datei:
    ```
@@ -36,7 +36,7 @@ Für noch schnelleren Zugriff:
 
 ### Schritt 2: Zum Projektordner navigieren
 ```cmd
-cd C:\Users\hendrik.max\Documents\DEV_LOCL\cutover_mail\Script
+cd C:\Users\hendrik.max\Documents\DEV_LOCL\cutover_mail_v2\Script
 ```
 
 ### Schritt 3: Programm starten
@@ -58,7 +58,7 @@ Das Programm-Fenster öffnet sich und Du kannst mit der E-Mail-Generierung begin
 - Das Virtual Environment wurde möglicherweise gelöscht
 - Führe folgende Befehle aus:
   ```cmd
-  cd C:\Users\hendrik.max\Documents\DEV_LOCL\cutover_mail\Script
+  cd C:\Users\hendrik.max\Documents\DEV_LOCL\cutover_mail_v2\Script
   python -m venv .venv
   .venv\Scripts\pip.exe install -r requirements.txt
   ```
@@ -75,14 +75,20 @@ Nach dem Start:
 1. **Excel-Datei auswählen** - Klicke auf "Durchsuchen..." und wähle Deine Cutoverplan-Datei
 2. **Tabellenblatt wählen** - Wähle das Blatt mit den Aktivitäten (z.B. "CuOv-Plan DPAG neu")
 3. **Cutover-Ident eingeben** - z.B. "JOSEF" oder "DPN_ECH"
-4. **Ausgabepfad wählen** - Ordner, wo die E-Mail-Dateien gespeichert werden sollen
-5. **Filter setzen** (optional) - Nach IST-Status oder Aktivitäts-Ident filtern
-6. **E-Mails generieren** - Klicke auf den Button und warte auf die Bestätigung
+4. **Link Cutover-Plan eingeben** - SharePoint-Link zum Cutover-Plan (wird in der E-Mail als anklickbarer Link angezeigt)
+5. **E-Mail-Modus wählen**:
+   - **Outlook-Entwürfe**: E-Mails werden direkt in Outlook geöffnet (zur Prüfung)
+   - **E-Mail-Dateien (.eml)**: Werden im gewählten Ordner gespeichert
+6. **Ausgabepfad wählen** - Ordner, wo die E-Mail-Dateien gespeichert werden sollen (nur bei .eml-Modus)
+7. **Filter setzen** (optional):
+   - **IST-Status Filter**: Nur Aktivitäten mit leerem IST-Status
+   - **Ident-Filter**: Nach bestimmtem Ident-Bereich filtern (z.B. "1.1", "2.3")
+8. **E-Mails generieren** - Klicke auf den Button und warte auf die Bestätigung
 
-Die generierten EML-Dateien kannst Du per Doppelklick in Outlook öffnen.
+Die generierten EML-Dateien kannst Du per Doppelklick in Outlook oder jedem anderen E-Mail-Client öffnen.
 
 ---
 
-**Version:** 1.0
-**Datum:** 2025-11-18
+**Version:** 1.2
+**Datum:** 2025-11-30
 **Autor:** Hendrik Max
