@@ -4,7 +4,7 @@ Automatische Erstellung von Cutover-E-Mails aus Excel-Cutoverplan für Microsoft
 
 ## Überblick
 
-Dieses Python-Tool liest einen Excel-basierten Cutoverplan und erstellt automatisch personalisierte E-Mails für jede Cutover-Aktivität. Die E-Mails können entweder als Outlook-Entwürfe erstellt oder als .msg-Dateien gespeichert werden.
+Dieses Python-Tool liest einen Excel-basierten Cutoverplan und erstellt automatisch personalisierte E-Mails für jede Cutover-Aktivität. Die E-Mails können entweder als Outlook-Entwürfe erstellt oder als .eml-Dateien gespeichert werden.
 
 ## Features
 
@@ -12,12 +12,16 @@ Dieses Python-Tool liest einen Excel-basierten Cutoverplan und erstellt automati
 - **GUI-Oberfläche**: Benutzerfreundliche grafische Oberfläche mit tkinter
 - **Flexible E-Mail-Erstellung**:
   - Outlook-Entwürfe (zur Prüfung vor dem Versand)
-  - .msg-Dateien (zum späteren Öffnen)
+  - .eml-Dateien (zum späteren Öffnen in jedem E-Mail-Client)
+- **Mehrere Empfänger**: Unterstützt mehrere E-Mail-Adressen pro Aktivität (getrennt durch `;` oder `,`)
 - **Filter-Optionen**:
   - Nach IST-Status filtern
-  - Nach Bereich filtern
+  - Nach Aktivitäts-Ident filtern
 - **Fortschrittsanzeige**: Live-Updates während der Verarbeitung
-- **Fehlerbehandlung**: Robuste Validierung und aussagekräftige Fehlermeldungen
+- **Robuste Fehlerbehandlung**: 
+  - Validierung von E-Mail-Adressen
+  - Automatische Bereinigung von Zeilenumbrüchen in Aktivitätsbeschreibungen
+  - Aussagekräftige Fehlermeldungen
 
 ## Voraussetzungen
 
@@ -71,16 +75,16 @@ python cutover_mail_generator.py
    - Geben Sie die Identifikation für den Cutover ein (z.B. "JOSEF", "DPN_ECH")
    - Diese erscheint im Betreff jeder E-Mail
 
-4. **E-Mail-Modus wählen**
-   - **Outlook-Entwürfe erstellen**: E-Mails werden in Outlook als Entwürfe geöffnet
-   - **Als .msg-Dateien speichern**: E-Mails werden als Dateien gespeichert
+4. **Link Cutover-Plan eingeben** (optional)
+   - SharePoint-Link zum Cutover-Plan
+   - Wird in der E-Mail als anklickbarer Link eingefügt
 
-5. **Ausgabepfad wählen** (nur bei .msg-Modus)
-   - Klicken Sie auf "Durchsuchen..." und wählen Sie einen Ordner
+5. **Ausgabepfad wählen**
+   - Klicken Sie auf "Durchsuchen..." und wählen Sie einen Ordner für die .eml-Dateien
 
 6. **Filter setzen** (optional)
-   - ☑ "Nur Aktivitäten mit leerem IST-Status": Nur unerledigte Aktivitäten
-   - "Bereich filtern": Nur Aktivitäten eines bestimmten Bereichs
+   - **IST-Status filtern**: Nur Aktivitäten mit bestimmtem Status (z.B. leer)
+   - **Aktivitäts-Ident filtern**: Nur Aktivitäten mit bestimmtem Ident (z.B. "3.1")
 
 7. **E-Mails generieren**
    - Klicken Sie auf "E-Mails generieren"
@@ -95,10 +99,11 @@ Das Tool erwartet folgende Spalten in der Excel-Datei:
 
 | Spaltenname | Beschreibung |
 |-------------|--------------|
-| **Ident** | Eindeutige Aktivitäts-ID |
-| **Aktivität** | Beschreibung der Aktivität |
-| **E-Mail** | E-Mail-Adresse des Ausführenden |
+| **Ident** | Eindeutige Aktivitäts-ID (wird als String gelesen, z.B. "1.10") |
+| **Aktivität** | Beschreibung der Aktivität (Zeilenumbrüche werden automatisch bereinigt) |
+| **E-Mail** | E-Mail-Adresse(n) des Ausführenden (mehrere Adressen mit `;` oder `,` trennen) |
 | **PLAN-Start** | Geplantes Start-Datum |
+| **PLAN-Ende** | Geplantes End-Datum |
 | **System/Mandant-Buchungskreis** | System-Information |
 
 ### Optionale Felder
@@ -107,27 +112,43 @@ Das Tool erwartet folgende Spalten in der Excel-Datei:
 |-------------|------------|
 | **IST-Status** | Für Filterung nach Status |
 | **Bereich** | Für Filterung nach Bereich |
+| **PLAN-Ende** | Wird in E-Mail angezeigt |
 
 ## E-Mail-Format
 
 Jede E-Mail wird automatisch wie folgt erstellt:
 
-**An:** {E-Mail-Adresse aus Excel}
+**An:** {E-Mail-Adresse(n) aus Excel}
 **Bcc:** hendrik.max4@dhl.com
 **Betreff:** {Cutover-Ident} - {Ident} - {Aktivität}
+
+> **Hinweis**: Bei mehreren Empfängern werden alle im "An:"-Feld aufgeführt.
 
 **Inhalt:**
 ```
 Hallo,
 
-bitte führe die folgende Cutover-Aktivität
+bitte führe die folgende Cutover-Aktivität aus dem Cutover-Plan {Tabellenblatt}:
+
 {Ident} - {Aktivität}
-am: {PLAN-Start}
+
+von: {PLAN-Start}
+bis: {PLAN-Ende}
 im System: {System/Mandant-Buchungskreis}
 aus.
 
-Bitte trage nach Ausführung der Cutover-Aktivität den Status im
-Cutoverplan {Cutover-Ident} in der o.a. Cutover-Aktivität ein.
+Bitte trage nach Ausführung der Cutover-Aktivität den Status:
+
+abgeschlossen
+
+im Cutoverplan:
+
+{Link Cutover-Plan}
+
+
+in der o.a. Cutover-Aktivität ein und
+
+sende mir die E-Mail mit "abgeschlossen" am Ende des Betreffs zurück.
 
 Für Rückfragen stehe ich Dir sehr gern zur Verfügung.
 
@@ -180,7 +201,12 @@ Um das E-Mail-Template oder andere Einstellungen anzupassen, bearbeiten Sie die 
 ### "Ungültige E-Mail"
 - Prüfen Sie die E-Mail-Adressen in der Excel-Datei
 - E-Mails müssen das Format `name@domain.com` haben
+- Mehrere E-Mails können mit `;` oder `,` getrennt werden (z.B. `max@dhl.com; anna@dhl.com`)
 - Zeilen mit ungültigen E-Mails werden automatisch übersprungen
+
+### "Fehler beim Speichern der EML-Datei"
+- Prüfen Sie, ob der Ausgabepfad existiert und beschreibbar ist
+- Stellen Sie sicher, dass keine Datei mit gleichem Namen bereits geöffnet ist
 
 ## Lizenz
 
@@ -194,5 +220,23 @@ hendrik.max4@dhl.com
 
 ---
 
-**Version:** 1.0
-**Datum:** 2025-11-18
+## Changelog
+
+### Version 1.3 (2025-12-03)
+- ✓ Unterstützung für mehrere E-Mail-Empfänger (getrennt durch `;` oder `,`)
+- ✓ Automatische Bereinigung von Zeilenumbrüchen in Aktivitätsbeschreibungen
+- ✓ Verbesserte Fehlerbehandlung
+
+### Version 1.2 (2025-11-30)
+- ✓ Ident-Trunkierung Fix ("1.10" bleibt "1.10")
+- ✓ Link zum Cutover-Plan in E-Mails
+- ✓ Tabellenblatt-Name in E-Mail-Text
+- ✓ EML-Datei-Export statt MSG
+
+### Version 1.1 (2025-11-23)
+- ✓ Grundfunktionalität
+
+---
+
+**Version:** 1.3
+**Datum:** 2025-12-03

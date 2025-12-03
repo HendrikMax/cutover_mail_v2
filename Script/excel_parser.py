@@ -58,19 +58,40 @@ def validate_columns(df: pd.DataFrame) -> None:
 def validate_email(email: str) -> bool:
     """
     Validiert E-Mail-Format.
+    
+    Unterstützt mehrere E-Mail-Adressen getrennt durch Semikolon oder Komma.
 
     Args:
-        email: E-Mail-Adresse
+        email: E-Mail-Adresse oder mehrere Adressen getrennt durch ; oder ,
 
     Returns:
-        True wenn gültig, False sonst
+        True wenn mindestens eine gültige E-Mail gefunden wurde, False sonst
     """
     if pd.isna(email) or not email:
         return False
 
     # Einfache E-Mail-Validierung mit regex
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, str(email).strip()))
+    
+    # Unterstützung für mehrere E-Mail-Adressen (getrennt durch ; oder ,)
+    email_str = str(email).strip()
+    
+    # Teile nach Semikolon oder Komma
+    separators = [';', ',']
+    email_list = [email_str]
+    
+    for sep in separators:
+        if sep in email_str:
+            email_list = [e.strip() for e in email_str.split(sep)]
+            break
+    
+    # Validiere jede E-Mail-Adresse
+    valid_count = 0
+    for single_email in email_list:
+        if single_email and re.match(pattern, single_email):
+            valid_count += 1
+    
+    return valid_count > 0
 
 
 def format_date(date_value) -> str:

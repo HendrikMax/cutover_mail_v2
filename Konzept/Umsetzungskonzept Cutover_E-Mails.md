@@ -1,8 +1,8 @@
 # Umsetzungskonzept: Cutover E-Mail Generator
 
 **Projekt:** Automatische Erstellung von Cutover-E-Mails aus Excel-Cutoverplan
-**Datum:** 2025-11-30
-**Version:** 1.2
+**Datum:** 2025-12-03
+**Version:** 1.3
 
 ---
 
@@ -54,7 +54,7 @@ Basierend auf der Beispieldatei `DHL_JOSEF CuOvPlan DPN_ECH V01 20250813 DRAFT.x
 |-------------|------------|-------------|
 | **Ident** | Aktivitäts-ID für Betreff | Ja |
 | **Aktivität** | Beschreibung der Aktivität | Ja |
-| **E-Mail** | Empfänger-Adresse | Ja |
+| **E-Mail** | Empfänger-Adresse (unterstützt mehrere Adressen getrennt durch `;` oder `,`) | Ja |
 | **PLAN-Start** | Geplantes Start-Datum | Ja |
 | **System/Mandant-Buchungskreis** | System-Information | Ja |
 | **IST-Status** | Für optionale Filterung | Nein |
@@ -327,12 +327,14 @@ def validate_columns(df) -> bool:
 def validate_email(email: str) -> bool:
     """
     Validiert E-Mail-Format.
+    
+    Unterstützt mehrere E-Mail-Adressen getrennt durch Semikolon oder Komma.
 
     Args:
-        email: E-Mail-Adresse
+        email: E-Mail-Adresse oder mehrere Adressen getrennt durch ; oder ,
 
     Returns:
-        True wenn gültig
+        True wenn mindestens eine gültige E-Mail gefunden wurde
     """
 ```
 
@@ -342,7 +344,8 @@ def validate_email(email: str) -> bool:
 - **Ident-Trunkierung Fix**: Liest Ident-Spalte explizit als String (`dtype={ident_col: str}`), um zu verhindern, dass "1.10" zu "1.1" wird
 - Filtert leere Zeilen heraus (wo Ident leer ist)
 - Konvertiert Datum-Felder in lesbares Format (DD.MM.YYYY HH:MM)
-- Validiert E-Mail-Adressen mit regex
+- **Mehrere E-Mail-Adressen**: Validiert E-Mail-Adressen mit regex, unterstützt mehrere Adressen getrennt durch `;` oder `,`
+- Gibt `True` zurück, wenn mindestens eine gültige E-Mail-Adresse gefunden wurde
 
 ---
 
@@ -370,13 +373,15 @@ def create_email_body(activity: dict, cutover_ident: str, sheet_name: str = "", 
 def create_email_subject(activity: dict, cutover_ident: str) -> str:
     """
     Erstellt E-Mail-Betreff.
+    
+    Entfernt Zeilenumbrüche aus der Aktivitätsbeschreibung.
 
     Args:
         activity: Dictionary mit Aktivitätsdaten
         cutover_ident: Cutover-Identifikation
 
     Returns:
-        Formatierter Betreff (gekürzt bei Bedarf)
+        Formatierter Betreff (gekürzt bei Bedarf, ohne Zeilenumbrüche)
     """
 
 def create_outlook_draft(activity: dict, cutover_ident: str, sheet_name: str = "", cutover_plan_link: str = ""):
@@ -438,6 +443,8 @@ def generate_emails(activities: list, cutover_ident: str, mode: str,
 - Fehlerbehandlung für ungültige E-Mail-Adressen
 - Fortschritts-Callback für GUI-Update
 - HTML-Formatierung für EML-Dateien mit anklickbaren Links
+- **Mehrere Empfänger**: Unterstützt mehrere E-Mail-Adressen im "To:"-Feld
+- **Zeilenumbruch-Bereinigung**: Entfernt `\n` und `\r` aus Betreffzeilen
 
 ---
 
@@ -674,7 +681,47 @@ python-dateutil>=2.8.2
 
 ---
 
-## 14. Kontakt & Support
+---
+
+## 14. Changelog
+
+### Version 1.3 (2025-12-03)
+
+**Neue Features:**
+- ✓ **Mehrere E-Mail-Empfänger**: Unterstützung für mehrere E-Mail-Adressen pro Aktivität
+  - E-Mail-Adressen können durch Semikolon (`;`) oder Komma (`,`) getrennt werden
+  - Alle Empfänger werden im "An:"-Feld aufgeführt
+  - Beispiel: `max.mustermann@dhl.com; anna.schmidt@dhl.com`
+
+**Bugfixes:**
+- ✓ **Zeilenumbruch-Bereinigung**: Aktivitätsbeschreibungen mit Zeilenumbrüchen (`\n`) werden jetzt korrekt verarbeitet
+  - Zeilenumbrüche werden automatisch durch Leerzeichen ersetzt
+  - Verhindert Fehler beim Erstellen der EML-Dateien
+  - Betroffene Aktivitäten (z.B. Ident 3.1) funktionieren jetzt einwandfrei
+
+**Betroffene Module:**
+- `excel_parser.py`: Erweiterte `validate_email()` Funktion
+- `email_generator.py`: Erweiterte `create_email_subject()` Funktion
+
+### Version 1.2 (2025-11-30)
+
+**Features:**
+- ✓ Ident-Trunkierung Fix (verhindert "1.10" → "1.1")
+- ✓ Link zum Cutover-Plan in E-Mails
+- ✓ Tabellenblatt-Name in E-Mail-Text
+- ✓ EML-Datei-Export (stabiler als MSG)
+
+### Version 1.1 (2025-11-23)
+
+**Features:**
+- ✓ Grundfunktionalität: Excel-Import, E-Mail-Generierung
+- ✓ GUI mit tkinter
+- ✓ Filter-Optionen (IST-Status, Ident)
+- ✓ Outlook-Integration
+
+---
+
+## 15. Kontakt & Support
 
 **Projekt-Owner:** Hendrik Max
 **E-Mail:** hendrik.max4@dhl.com

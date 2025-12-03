@@ -89,6 +89,21 @@ Die generierten EML-Dateien kannst Du per Doppelklick in Outlook oder jedem ande
 
 ---
 
-**Version:** 1.2
-**Datum:** 2025-11-30
+## Neue Features (Version 1.3)
+
+### Mehrere E-Mail-Empfänger
+Das Programm unterstützt jetzt Aktivitäten mit mehreren E-Mail-Adressen:
+- E-Mail-Adressen können durch Semikolon (`;`) oder Komma (`,`) getrennt werden
+- Beispiel: `max.mustermann@dhl.com; anna.schmidt@dhl.com`
+- Alle Empfänger werden im "An:"-Feld der E-Mail aufgeführt
+
+### Automatische Bereinigung von Zeilenumbrüchen
+- Aktivitätsbeschreibungen mit Zeilenumbrüchen (`\n`) werden automatisch bereinigt
+- Zeilenumbrüche werden durch Leerzeichen ersetzt
+- Verhindert Fehler beim Erstellen der E-Mail-Dateien
+
+---
+
+**Version:** 1.3
+**Datum:** 2025-12-03
 **Autor:** Hendrik Max

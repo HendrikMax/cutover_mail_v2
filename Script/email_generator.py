@@ -26,9 +26,14 @@ def create_email_subject(activity: Dict[str, str], cutover_ident: str) -> str:
     """
     ident = activity['ident']
     aktivitaet = activity['aktivitaet']
+    
+    # Entferne Zeilenumbrüche aus der Aktivität (nicht erlaubt in E-Mail-Betreff)
+    aktivitaet_clean = aktivitaet.replace('\n', ' ').replace('\r', ' ')
+    # Entferne mehrfache Leerzeichen
+    aktivitaet_clean = ' '.join(aktivitaet_clean.split())
 
     # Betreff zusammensetzen
-    subject = f"{cutover_ident} - {ident} - {aktivitaet}"
+    subject = f"{cutover_ident} - {ident} - {aktivitaet_clean}"
 
     # Optional: Betreff kürzen, falls zu lang (Outlook-Limit ~255 Zeichen)
     max_length = 200
